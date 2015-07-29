@@ -64,6 +64,12 @@ module.exports = function proxyMiddleware(options) {
       }
       applyViaHeader(myRes.headers, opts, myRes.headers);
       rewriteCookieHosts(myRes.headers, opts, myRes.headers, req);
+
+      // Call transform if it exists
+      if (typeof options.transform !== "undefined" && options.transform !== null) {
+        options.transform(myRes.headers, opts, myRes.headers, req);
+      }
+
       resp.writeHead(myRes.statusCode, myRes.headers);
       myRes.on('error', function (err) {
         next(err);

@@ -405,11 +405,11 @@ describe("proxy", function() {
   });
 
   it("removes the Secure directive when proxying from https to http", function(done) {
-    var cookie1 = function(host, after) { 
+    var cookie1 = function(host, after) {
       if (after) {
-        return 'cookie1=value1; Expires=Fri, 01-Mar-2019 00:00:01 GMT; Domain=' + host; 
+        return 'cookie1=value1; Expires=Fri, 01-Mar-2019 00:00:01 GMT; Domain=' + host;
       } else {
-        return 'cookie1=value1; Expires=Fri, 01-Mar-2019 00:00:01 GMT; Domain=' + host+';Secure'; 
+        return 'cookie1=value1; Expires=Fri, 01-Mar-2019 00:00:01 GMT; Domain=' + host+';Secure';
       }
     };
 
@@ -511,6 +511,35 @@ describe("proxy", function() {
       app.listen(8073);
 
       var options = url.parse('http://localhost:8073/foo/test/');
+      http.get(options, function () {
+        // ok...
+        done();
+      }).on('error', function () {
+        assert.fail('Request proxy failed');
+      });
+    });
+  });
+
+  it("calls the transform function", function(done) {
+    var destServer = createServerWithLibName('http', function(req, resp) {
+      assert.strictEqual(req.headers.host, 'localhost:8082');
+      resp.statusCode = 200;
+      resp.write(req.url);
+      resp.end();
+    });
+
+    var proxyOptions = url.parse('http://localhost:8073/');
+    proxyOptions.transform = function () {
+      console.log(arguments);
+    }
+
+    var app = connect();
+    app.use(proxy(proxyOptions));
+
+    destServer.listen(8079, 'localhost', function() {
+      app.listen(8082);
+
+      var options = url.parse('http://localhost:8082/foo/test/');
       http.get(options, function () {
         // ok...
         done();
